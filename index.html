@@ -24,7 +24,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 100px;
+  padding-top: 120px;
 }
 
 header {
@@ -63,6 +63,7 @@ nav a {
   text-decoration: none;
   font-size: 16px;
   transition: 0.3s;
+  cursor: pointer;
 }
 
 nav a:hover {
@@ -117,7 +118,7 @@ nav a:hover {
   padding: 20px;
   border-radius: 12px;
   backdrop-filter: blur(10px);
-  margin-top: 30px;
+  margin-top: 20px;
 }
 
 .editor-section textarea {
@@ -150,55 +151,84 @@ nav a:hover {
   font-weight: bold;
 }
 
+.page {
+  display: none;
+}
+
+.page.active {
+  display: block;
+}
+
   </style>
 </head><body>
   <header>
     <div class="logo">🔥 <span>RecPro</span></div>
     <nav>
-      <a href="#">Home</a>
-      <a href="#library">Library</a>
-      <a href="#settings">Settings</a>
+      <a onclick="showPage('home')">Home</a>
+      <a onclick="showPage('library')">Library</a>
+      <a onclick="showPage('settings')">Settings</a>
     </nav>
-  </header>  <div class="title">RecPro</div>  <div class="controls">
-    <div class="circle-button" id="startBtn">
-      <img src="https://i.ibb.co/mrrhf92q/pause-1.png" alt="record" />
+  </header>  <div class="title">RecPro</div>  <div id="home" class="page active">
+    <div class="controls">
+      <div class="circle-button" id="startBtn">
+        <img src="https://i.ibb.co/YkQ7yHP/rec.png" alt="record" />
+      </div>
+      <div class="circle-button" id="pauseBtn">
+        <img src="https://i.ibb.co/mrrhf92q/pause-1.png" alt="pause" />
+      </div>
+    </div><div class="waveform-container" id="waveform"></div>
+
+<div class="editor-section">
+  <textarea placeholder="Paste or import your script here..."></textarea>
+</div>
+
+<div class="ads-section">
+  <div class="ad-box">Ad Space 1</div>
+  <div class="ad-box">Ad Space 2</div>
+</div>
+
+  </div>  <div id="library" class="page">
+    <div class="editor-section">
+      <h2>Saved Recordings</h2>
+      <div id="recordingList"></div>
     </div>
-    <div class="circle-button" id="pauseBtn">
-      <img src="https://i.ibb.co/mrrhf92q/pause-1.png" alt="pause" />
+  </div>  <div id="settings" class="page">
+    <div class="editor-section">
+      <h2>Change Theme</h2>
+      <button onclick="setTheme(1)">Theme 1</button>
+      <button onclick="setTheme(2)">Theme 2</button>
+      <button onclick="setTheme(3)">Theme 3</button>
+      <button onclick="setTheme(4)">Theme 4</button>
     </div>
-    <div class="circle-button" id="libraryBtn">
-      <img src="https://i.ibb.co/q3ZFXmtJ/audio-book.png" alt="library" />
-    </div>
-  </div>  <div class="waveform-container" id="waveform"></div>  <div class="editor-section">
-    <textarea placeholder="Paste or import your script here..."></textarea>
-  </div>  <div class="ads-section">
-    <div class="ad-box">Ad Space 1</div>
-    <div class="ad-box">Ad Space 2</div>
   </div>  <script>
     const startBtn = document.getElementById('startBtn');
     const pauseBtn = document.getElementById('pauseBtn');
-    const waveform = document.getElementById('waveform');
+    const waveformContainer = document.getElementById('waveform');
+    const recordingList = document.getElementById('recordingList');
+
     let mediaRecorder;
     let audioChunks = [];
     let isRecording = false;
+
     const wavesurfer = WaveSurfer.create({
-      container: '#waveform',
-      waveColor: 'white',
-      progressColor: 'orange',
+      container: waveformContainer,
+      waveColor: '#ccc',
+      progressColor: '#ff6a00',
       height: 100,
-      responsive: true,
     });
 
     navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
       mediaRecorder = new MediaRecorder(stream);
 
-      mediaRecorder.ondataavailable = e => {
-        audioChunks.push(e.data);
-      };
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunks, { type: 'audio/webm' });
+        const blob = new Blob(audioChunks, { type: 'audio/mp3' });
         const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        const item = document.createElement('div');
+        item.innerHTML = `<audio controls src="${url}"></audio>`;
+        recordingList.appendChild(item);
         wavesurfer.load(url);
         audioChunks = [];
       };
@@ -208,7 +238,6 @@ nav a:hover {
       if (!isRecording) {
         mediaRecorder.start();
         isRecording = true;
-        console.log('Recording started');
       }
     });
 
@@ -216,7 +245,18 @@ nav a:hover {
       if (isRecording) {
         mediaRecorder.stop();
         isRecording = false;
-        console.log('Recording stopped');
       }
     });
+
+    function showPage(id) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function setTheme(num) {
+      if (num === 1) document.body.style.background = 'linear-gradient(135deg, #1d2b64, #f8cdda)';
+      if (num === 2) document.body.style.background = 'linear-gradient(135deg, #00c6ff, #0072ff)';
+      if (num === 3) document.body.style.background = 'linear-gradient(135deg, #f7971e, #ffd200)';
+      if (num === 4) document.body.style.background = 'linear-gradient(135deg, #a1c4fd, #c2e9fb)';
+    }
   </script></body></html>
