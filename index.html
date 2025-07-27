@@ -1,252 +1,196 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Voice Recorder</title>
   <style>
-    * {
-      box-sizing: border-box;
-      font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      padding: 0;
-    }
+    :root {
+      --bg: linear-gradient(135deg, #141e30, #243b55);
+      --text: #fff;
+      --accent: #00d4ff;
+      --circle-bg: rgba(0, 212, 255, 0.1);
+    }[data-theme="light"] {
+  --bg: linear-gradient(135deg, #ffecd2, #fcb69f);
+  --text: #000;
+  --accent: #ff3e3e;
+  --circle-bg: rgba(255, 62, 62, 0.1);
+}
 
-    body {
-      display: flex;
-      height: 100vh;
-      transition: background 0.4s, color 0.4s;
-    }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+}
 
-    /* THEMES */
-    body.theme1 { background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color: white; }
-    body.theme2 { background: linear-gradient(135deg, #fdfbfb, #ebedee); color: #222; }
-    body.theme3 { background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d); color: white; }
-    body.theme4 { background: linear-gradient(135deg, #000046, #1cb5e0); color: white; }
+body {
+  display: flex;
+  height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
 
-    #sidebar {
-      width: 220px;
-      background: rgba(0, 0, 0, 0.2);
-      backdrop-filter: blur(10px);
-      padding: 20px;
-      color: inherit;
-    }
+.sidebar {
+  width: 80px;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 20px;
+  gap: 25px;
+}
 
-    #sidebar h3 { margin-bottom: 10px; }
-    #sidebar label {
-      display: block;
-      margin: 10px 0;
-      cursor: pointer;
-    }
+.sidebar button {
+  background: var(--circle-bg);
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease;
+  cursor: pointer;
+}
 
-    #main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 20px;
-      padding: 30px;
-    }
+.sidebar button:hover {
+  background: var(--accent);
+}
 
-    .circle-icon {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 50%;
-      padding: 12px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 64px;
-      height: 64px;
-      transition: background 0.3s;
-    }
+.recorder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  gap: 20px;
+}
 
-    .circle-icon:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
+#waveform {
+  width: 100%;
+  max-width: 600px;
+  height: 100px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
 
-    #logo {
-      width: 48px;
-    }
+.controls {
+  display: flex;
+  gap: 20px;
+}
 
-    .circle-icon img {
-      width: 32px;
-      height: 32px;
-    }
+.circle-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--circle-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.3s;
+}
 
-    #waveform {
-      width: 90%;
-      height: 120px;
-      border-radius: 10px;
-      background: rgba(0, 0, 0, 0.2);
-    }
+.circle-btn:hover {
+  background-color: var(--accent);
+}
 
-    .controls {
-      display: flex;
-      gap: 20px;
-    }
+.settings {
+  margin-top: 20px;
+}
 
-    #audioLibrary {
-      display: none;
-      margin-top: 10px;
-    }
+.theme-option {
+  background: var(--circle-bg);
+  border: none;
+  padding: 8px 16px;
+  margin: 5px;
+  border-radius: 6px;
+  cursor: pointer;
+}
 
-    select, button {
-      padding: 8px 16px;
-      margin-top: 10px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
+.theme-option:hover {
+  background: var(--accent);
+  color: #fff;
+}
 
-    #timer {
-      font-size: 20px;
-      font-weight: bold;
-    }
-
-    @media (max-width: 600px) {
-      #sidebar { display: none; }
-    }
   </style>
 </head>
-<body class="theme1">
-  <div id="sidebar">
-    <h3>⚙️ Settings</h3>
-    <label><input type="radio" name="theme" value="theme1" checked /> Deep Blue</label>
-    <label><input type="radio" name="theme" value="theme2" /> Light Gray</label>
-    <label><input type="radio" name="theme" value="theme3" /> Sunset</label>
-    <label><input type="radio" name="theme" value="theme4" /> Ocean</label>
-    <hr />
-    <button onclick="alert('Logged out!')">🚪 Logout</button>
-  </div>
-
-  <div id="main">
-    <!-- Website Logo -->
-    <div class="circle-icon">
-      <img id="logo" src="https://i.ibb.co/yGRC19f/mic.png" alt="mic" />
-    </div>
-
+<body>
+  <div class="sidebar">
+    <button title="Home"><span>🏠</span></button>
+    <button title="Library"><span>📁</span></button>
+    <button title="Settings" onclick="toggleSettings()"><span>⚙️</span></button>
+    <button title="Logout" onclick="logout()"><span>🚪</span></button>
+  </div>  <div class="recorder">
+    <h2>🎤 Voice Recorder</h2>
     <div id="timer">00:00</div>
     <canvas id="waveform"></canvas>
-
-    <!-- Controls -->
     <div class="controls">
-      <!-- Start Button -->
-      <div class="circle-icon" id="startBtn">
-        <img src="https://i.ibb.co/mrrhf92q/pause-1.png" alt="Start Recording" />
-      </div>
+      <div class="circle-btn" id="startBtn">▶️</div>
+      <div class="circle-btn" id="stopBtn">⏹️</div>
+    </div><div class="settings" id="settingsMenu" style="display:none">
+  <h3>🎨 Change Theme</h3>
+  <button class="theme-option" onclick="setTheme('default')">Dark</button>
+  <button class="theme-option" onclick="setTheme('light')">Light</button>
+</div>
 
-      <!-- Stop Button -->
-      <div class="circle-icon" id="stopBtn" style="opacity: 0.5; pointer-events: none;">
-        <img src="https://i.ibb.co/mrrhf92q/pause-1.png" alt="Pause" />
-      </div>
+<audio id="audioPlayer" controls style="margin-top:20px; display:none;"></audio>
 
-      <!-- Audio Library -->
-      <div class="circle-icon" id="libraryBtn">
-        <img src="https://i.ibb.co/q3ZFXmtJ/audio-book.png" alt="Audio Library" />
-      </div>
-    </div>
-
-    <audio id="audioLibrary" controls></audio>
-  </div>
-
-  <script>
+  </div>  <script>
     const canvas = document.getElementById('waveform');
     const ctx = canvas.getContext('2d');
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
 
-    const timer = document.getElementById('timer');
-    const startBtn = document.getElementById('startBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const audioLibrary = document.getElementById('audioLibrary');
-    const libraryBtn = document.getElementById('libraryBtn');
-
-    let mediaRecorder, audioChunks = [], analyser, dataArray, audioContext, source, animationId, stream;
-    let startTime, timerInterval;
-
-    function updateTimer() {
-      const diff = Math.floor((Date.now() - startTime) / 1000);
-      const mins = String(Math.floor(diff / 60)).padStart(2, '0');
-      const secs = String(diff % 60).padStart(2, '0');
-      timer.textContent = `${mins}:${secs}`;
-    }
-
-    function drawBars() {
-      analyser.getByteFrequencyData(dataArray);
+    function drawWaveform() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      const barWidth = 3, gap = 1, centerY = canvas.height / 2;
-      const barCount = Math.floor(canvas.width / (barWidth + gap));
-      ctx.fillStyle = 'lime';
-
-      for (let i = 0; i < barCount; i++) {
-        const value = dataArray[i];
-        const barHeight = (value / 255) * canvas.height / 2;
-        const x = i * (barWidth + gap);
-        ctx.fillRect(x, centerY - barHeight, barWidth, barHeight * 2);
+      ctx.fillStyle = '#00d4ff';
+      for (let i = 0; i < canvas.width; i += 10) {
+        const height = Math.random() * canvas.height;
+        ctx.fillRect(i, canvas.height / 2 - height / 2, 6, height);
       }
-
-      animationId = requestAnimationFrame(drawBars);
+      requestAnimationFrame(drawWaveform);
     }
+    drawWaveform();
 
-    async function startRecording() {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 44100 } });
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      source = audioContext.createMediaStreamSource(stream);
-      analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      dataArray = new Uint8Array(analyser.frequencyBinCount);
-      source.connect(analyser);
+    let mediaRecorder;
+    let chunks = [];
 
-      mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm',
-        audioBitsPerSecond: 192000
-      });
-      audioChunks = [];
+    document.getElementById('startBtn').onclick = async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      chunks = [];
 
-      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+      mediaRecorder.ondataavailable = e => chunks.push(e.data);
       mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunks, { type: 'audio/webm' });
-        const url = URL.createObjectURL(blob);
-        audioLibrary.src = url;
-        audioLibrary.style.display = 'block';
+        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+        const url = URL.createObjectURL(audioBlob);
+        const audio = document.getElementById('audioPlayer');
+        audio.src = url;
+        audio.style.display = 'block';
       };
 
       mediaRecorder.start();
-      startTime = Date.now();
-      timerInterval = setInterval(updateTimer, 1000);
-      drawBars();
+    };
 
-      startBtn.style.opacity = 0.5;
-      startBtn.style.pointerEvents = 'none';
-      stopBtn.style.opacity = 1;
-      stopBtn.style.pointerEvents = 'auto';
+    document.getElementById('stopBtn').onclick = () => {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+    };
+
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
     }
 
-    function stopRecording() {
-      mediaRecorder.stop();
-      clearInterval(timerInterval);
-      cancelAnimationFrame(animationId);
-      audioContext.close();
-      stream.getTracks().forEach(track => track.stop());
-
-      timer.textContent = '00:00';
-      startBtn.style.opacity = 1;
-      startBtn.style.pointerEvents = 'auto';
-      stopBtn.style.opacity = 0.5;
-      stopBtn.style.pointerEvents = 'none';
+    function toggleSettings() {
+      const menu = document.getElementById('settingsMenu');
+      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
     }
 
-    startBtn.onclick = startRecording;
-    stopBtn.onclick = stopRecording;
-    libraryBtn.onclick = () => audioLibrary.style.display = 'block';
-
-    document.querySelectorAll('input[name="theme"]').forEach(radio => {
-      radio.addEventListener('change', e => {
-        document.body.className = e.target.value;
-      });
-    });
-  </script>
-</body>
+    function logout() {
+      alert("Logged out!");
+    }
+  </script></body>
 </html>
