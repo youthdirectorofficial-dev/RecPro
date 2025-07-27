@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <title>Voice Recorder</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      height: 100vh;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      width: 90%;
+      max-width: 500px;
+      text-align: center;
+    }
+    .controllers button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    .controllers button:hover {
+      background: #0056b3;
+    }
+    audio {
+      margin-top: 15px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="display"></div>
+    <div class="controllers"></div>
+  </div>
+
+  <script>
+    const display = document.querySelector('.display')
+    const controllerWrapper = document.querySelector('.controllers')
+
+    const State = ['Initial', 'Record', 'Download']
+    let stateIndex = 0
+    let mediaRecorder, chunks = [], audioURL = ''
+
+    if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
+      console.log('mediaDevices supported..')
+
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        mediaRecorder = new MediaRecorder(stream)
+
+        mediaRecorder.ondataavailable = (e) => {
+          chunks.push(e.data)
+        }
+
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(chunks, { type: 'audio/ogg; codecs=opus' })
+          chunks = []
+          audioURL = window.URL.createObjectURL(blob)
+          document.querySelector('audio').src = audioURL
+        }
+      }).catch(error => {
+        console.log('Following error has occured : ', error)
+      })
+    } else {
+      stateIndex = ''
+      application(stateIndex)
+    }
+
+    const clearDisplay = () => display.textContent = ''
+    const clearControls = () => controllerWrapper.textContent = ''
+
+    const record = () => {
+      stateIndex = 1
+      mediaRecorder.start()
+      application(stateIndex)
+    }
+
+    const stopRecording = () => {
+      stateIndex = 2
+      mediaRecorder.stop()
+      application(stateIndex)
+    }
+
+    const downloadAudio = () => {
+      const downloadLink = document.createElement('a')
+      downloadLink.href = audioURL
+      downloadLink.setAttribute('download', 'audio')
+      downloadLink.click()
+    }
+
+    const addButton = (id, funString, text) => {
+      const btn = document.createElement('button')
+      btn.id = id
+      btn.setAttribute('onclick', funString)
+      btn.textContent = text
+      controllerWrapper.append(btn)
+    }
+
+    const addMessage = (text) => {
+      const msg = document.createElement('p')
+      msg.textContent = text
+      display.append(msg)
+    }
+
+    const addAudio = () => {
+      const audio = document.createElement('audio')
+      audio.controls = true
+      audio.src = audioURL
+      display.append(audio)
+    }
+
+    const application = (index) => {
+      switch (State[index]) {
+        case 'Initial':
+          clearDisplay()
+          clearControls()
+          addButton('record', 'record()', 'Start Recording')
+          break
+
+        case 'Record':
+          clearDisplay()
+          clearControls()
+          addMessage('Recording...')
+          addButton('stop', 'stopRecording()', 'Stop Recording')
+          break
+
+        case 'Download':
+          clearControls()
+          clearDisplay()
+          addAudio()
+          addButton('record', 'record()', 'Record Again')
+          break
+
+        default:
+          clearControls()
+          clearDisplay()
+          addMessage('Your browser does not support mediaDevices')
+          break
+      }
+    }
+
+    application(stateIndex)
+  </script>
+</body>
+</html>
