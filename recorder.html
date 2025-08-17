@@ -1,0 +1,539 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Audio Recorder</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --bg-color-light: #f0f2f5; --primary-bg-light: #ffffff; --secondary-bg-light: #e8ebef;
+            --text-color-light: #1A2B3C; --text-secondary-light: #52667A; --border-color-light: #dee2e6;
+            --accent-color-light: #00C8C8; --gradient-start-light: #eff3f7; --gradient-end-light: #ffffff;
+            --shadow-light: rgba(0, 0, 0, 0.08);
+            --bg-color-dark: #1A2B3C; --primary-bg-dark: #2C405A; --secondary-bg-dark: #3F5773;
+            --text-color-dark: #f8fafc; --text-secondary-dark: #CBD5E1; --border-color-dark: #475569;
+            --accent-color-dark: #00C8C8; --gradient-start-dark: #1A2B3C; --gradient-end-dark: #2C405A;
+            --shadow-dark: rgba(0, 0, 0, 0.3);
+            --bg-color: var(--bg-color-light); --primary-bg: var(--primary-bg-light); --secondary-bg: var(--secondary-bg-light);
+            --text-color: var(--text-color-light); --text-secondary: var(--text-secondary-light); --border-color: var(--border-color-light);
+            --accent-color: var(--accent-color-light); --gradient-start: var(--gradient-start-light); --gradient-end: var(--gradient-end-light);
+            --shadow: var(--shadow-light);
+            --border-radius-sm: 8px; --border-radius-md: 12px; --border-radius-lg: 16px;
+            --spacing-sm: 10px; --spacing-md: 20px; --spacing-lg: 30px;
+        }
+        body.dark-mode {
+            --bg-color: var(--bg-color-dark); --primary-bg: var(--primary-bg-dark); --secondary-bg: var(--secondary-bg-dark);
+            --text-color: var(--text-color-dark); --text-secondary: var(--text-secondary-dark); --border-color: var(--border-color-dark);
+            --accent-color: var(--accent-color-dark); --gradient-start: var(--gradient-start-dark); --gradient-end: var(--gradient-end-dark);
+            --shadow: var(--shadow-dark);
+        }
+        * {
+            margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background-color: var(--bg-color); color: var(--text-color); display: flex; flex-direction: column;
+            align-items: center; min-height: 100vh; width: 100vw;
+            overflow: hidden; /* Prevent scrolling */
+        }
+        .header {
+            background: linear-gradient(180deg, var(--gradient-start), var(--gradient-end)); color: var(--text-color);
+            padding: 14px var(--spacing-md);
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 4px 15px var(--shadow); position: fixed; top: 0; width: 100%; z-index: 100;
+            border-bottom-left-radius: var(--border-radius-lg);
+            border-bottom-right-radius: var(--border-radius-lg);
+            max-width: 1200px; margin: 0 auto; left: 50%; transform: translateX(-50%);
+        }
+        .back-btn, .favorite-btn {
+            font-size: 26px;
+            cursor: pointer; padding: 8px;
+            color: var(--text-color);
+        }
+        .back-btn:hover, .favorite-btn:hover { color: var(--accent-color); }
+        .app-title {
+            font-size: 22px; font-weight: 700; flex-grow: 1; text-align: center;
+            letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-color);
+        }
+        .favorite-btn.active { color: var(--accent-color); }
+        
+        .main {
+            width: 100%;
+            height: 100vh; /* Make main content full height */
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Center vertically */
+            align-items: center; /* Center horizontally */
+            position: relative; /* For absolute positioning of playback elements */
+            padding-top: 0; /* Remove header padding */
+            padding-bottom: 0; /* Remove footer padding */
+        }
+        .recorder-container {
+            width: 100%;
+            height: 100%; /* Take full height of main */
+            background-color: var(--primary-bg); /* Background for recorder area */
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Center vertically the group of elements */
+            align-items: center; /* Center horizontally the group of elements */
+            position: relative; /* For absolute positioned children like loading message */
+            overflow: hidden;
+        }
+        .loading-message {
+            color: var(--text-color);
+            font-size: 1.2em;
+            font-weight: 600;
+            text-align: center;
+            position: absolute; /* Overlay on top of other content */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+            width: 80%; /* To center text properly */
+        }
+
+        .record-button {
+            width: 120px; /* Larger size */
+            height: 120px;
+            background-color: #ef4444; /* Red for record */
+            border: 8px solid #dc2626; /* Darker red border */
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            margin-bottom: 25px; /* Space between button and visualizer */
+        }
+        .record-button.recording {
+            background-color: #dc2626; /* Darker red when recording */
+            border-radius: 20%; /* Change shape to square-ish */
+            border: 8px solid #991b1b;
+        }
+        .record-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6);
+        }
+        .record-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 10px rgba(239, 68, 68, 0.2);
+        }
+        .record-button i {
+            color: #f8fafc;
+            font-size: 50px; /* Larger icon */
+            transition: transform 0.2s ease;
+        }
+        .record-button.recording i {
+            transform: scale(0.7); /* Shrink icon when recording */
+        }
+
+        #audio-playback-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            display: none;
+            border: 5px solid var(--accent-color);
+            border-radius: var(--border-radius-md);
+            gap: 20px;
+        }
+        #audio-playback {
+            width: 80%;
+            max-width: 400px;
+        }
+        .playback-actions {
+            display: flex;
+            gap: var(--spacing-md);
+        }
+        .playback-btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .playback-btn.retake {
+            background-color: #ef4444;
+            color: #FFFFFF;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+        .playback-btn.retake:hover {
+            background-color: #dc2626;
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+        }
+        .playback-btn.save {
+            background-color: var(--accent-color);
+            color: #FFFFFF;
+            box-shadow: 0 4_px 12px rgba(0, 200, 200, 0.3);
+        }
+        .playback-btn.save:hover {
+            background-color: #00A3A3;
+            box_shadow: 0 6px 16px rgba(0, 200, 200, 0.5);
+        }
+
+        #recording-timer {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: var(--accent-color);
+            text-shadow: 0 0 5px rgba(0,0,0,0.3);
+            margin-bottom: 25px; /* Space between timer and record button */
+            display: none; /* Hidden by default */
+        }
+        .visualizer {
+            width: 90%; /* Wider visualizer */
+            max-width: 500px;
+            height: 120px; /* Taller visualizer */
+            background-color: rgba(0,0,0,0.1); /* Lighter background */
+            border-radius: var(--border-radius-md);
+            display: flex;
+            align-items: flex-end; /* Bars grow from bottom */
+            justify-content: space-between; /* Evenly space bars */
+            overflow: hidden;
+            padding: 10px; /* Padding inside visualizer */
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.2); /* Inner shadow for depth */
+            border: 1px solid rgba(0,0,0,0.1);
+            /* Removed absolute positioning, it's now a flex item */
+        }
+        .bar {
+            width: 3%; /* Percentage width for responsive bars */
+            min-width: 2px; /* Minimum width for very small screens */
+            height: 0; /* Start at 0 height */
+            background-color: var(--accent-color);
+            margin: 0 0.5%; /* Space between bars */
+            border-radius: 2px;
+            transition: height 0.08s ease-out, background-color 0.1s ease; /* Smooth transition for bar height and color */
+            will-change: height; /* Optimize for animation */
+        }
+        .bar.peak {
+            background-color: #ef4444; /* Red for peak levels */
+        }
+
+
+        @media (max-width: 768px) {
+            .header { padding: 12px 16px; border-bottom-left-radius: var(--border-radius-md); border-bottom-right-radius: var(--border-radius-md); }
+            .app-title { font-size: 20px; }
+            .back-btn, .favorite-btn { font-size: 24px; }
+            .record-button { width: 100px; height: 100px; border-width: 6px; margin-bottom: 20px; }
+            .record-button i { font-size: 40px; }
+            #recording-timer { font-size: 2em; margin-bottom: 20px; }
+            .visualizer { height: 100px; padding: 8px; }
+            .bar { width: 3.5%; margin: 0 0.4%; }
+        }
+        @media (max-width: 480px) {
+            .header { padding: 10px 12px; border-bottom-left-radius: var(--border-radius-sm); border-bottom-right-radius: var(--border-radius-sm); }
+            .app-title { font-size: 18px; }
+            .record-button { width: 80px; height: 80px; border-width: 5px; margin-bottom: 15px; }
+            .record-button i { font-size: 35px; }
+            #recording-timer { font-size: 1.8em; margin-bottom: 15px; }
+            .visualizer { height: 80px; padding: 6px; }
+            .bar { width: 4%; margin: 0 0.3%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="back-btn" id="back-btn"><i class="fas fa-arrow-left"></i></div>
+        <div class="app-title">Audio Recorder</div>
+        <div class="favorite-btn" id="favorite-btn"><i class="far fa-star"></i></div>
+    </div>
+    <div class="main">
+        <div class="recorder-container">
+            <div id="loading-message">Waiting for microphone access...</div>
+            <div id="recording-timer">00:00</div>
+            <div class="record-button" id="record-button">
+                <i class="fas fa-microphone"></i>
+            </div>
+            <div class="visualizer" id="audio-visualizer"></div>
+        </div>
+        <div id="audio-playback-container">
+            <audio id="audio-playback" controls></audio>
+            <div class="playback-actions">
+                <button class="playback-btn retake" id="retake-button">Retake</button>
+                <button class="playback-btn save" id="save-button">Save Recording</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        const backBtn = document.getElementById('back-btn');
+        const favoriteBtn = document.getElementById('favorite-btn');
+        const loadingMessage = document.getElementById('loading-message');
+        const recordingTimer = document.getElementById('recording-timer');
+        const audioVisualizer = document.getElementById('audio-visualizer');
+        const recordButton = document.getElementById('record-button');
+
+        const audioPlaybackContainer = document.getElementById('audio-playback-container');
+        const audioPlayback = document.getElementById('audio-playback');
+        const retakeButton = document.getElementById('retake-button');
+        const saveButton = document.getElementById('save-button');
+
+        const TOOL_ID = 'audio-recorder';
+
+        let isDarkMode = JSON.parse(localStorage.getItem('isDarkMode')) || false;
+        let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioBlob;
+        let recordingStartTime;
+        let timerInterval;
+        let audioStream;
+        let audioContext;
+        let analyser;
+        let dataArray;
+        let source;
+        let visualizerBars = [];
+        const NUM_BARS = 30; // Increased number of bars for a finer visualizer
+
+        if (isDarkMode) document.body.classList.add('dark-mode');
+        
+        if (favorites.includes(TOOL_ID)) {
+            favoriteBtn.querySelector('i').classList.replace('far', 'fas');
+            favoriteBtn.classList.add('active');
+        } else {
+            favoriteBtn.querySelector('i').classList.replace('fas', 'far');
+            favoriteBtn.classList.remove('active');
+        }
+
+        // Initialize visualizer bars
+        for (let i = 0; i < NUM_BARS; i++) {
+            const bar = document.createElement('div');
+            bar.classList.add('bar');
+            audioVisualizer.appendChild(bar);
+            visualizerBars.push(bar);
+        }
+
+        function updateTimer() {
+            const elapsedTime = Date.now() - recordingStartTime;
+            const totalSeconds = Math.floor(elapsedTime / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            recordingTimer.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function visualizeAudio() {
+            if (!analyser || mediaRecorder.state !== 'recording') {
+                // Ensure bars are reset if visualization stops unexpectedly
+                visualizerBars.forEach(bar => {
+                    bar.style.height = '0px';
+                    bar.classList.remove('peak');
+                });
+                return; 
+            }
+
+            requestAnimationFrame(visualizeAudio);
+            analyser.getByteFrequencyData(dataArray);
+
+            const visualizerHeight = audioVisualizer.offsetHeight;
+            const maxBarHeight = visualizerHeight - 20; // Leave some padding at the top
+
+            for (let i = 0; i < NUM_BARS; i++) {
+                const bar = visualizerBars[i];
+                // Get a slice of data for this bar
+                const slice = dataArray.slice(i * (dataArray.length / NUM_BARS), (i + 1) * (dataArray.length / NUM_BARS));
+                // Calculate average value for the bar's height
+                const average = slice.reduce((sum, value) => sum + value, 0) / slice.length;
+                
+                // Scale the height from 0 to maxBarHeight
+                let barHeight = (average / 255) * maxBarHeight; // 255 is max byte value for frequency data
+                
+                // Apply a power curve for more dynamic visualizer (optional, can adjust multiplier)
+                barHeight = Math.pow(barHeight, 0.8) * 1.5; 
+                barHeight = Math.min(barHeight, maxBarHeight); // Ensure it doesn't exceed max height
+
+                bar.style.height = `${barHeight}px`;
+
+                // Add a 'peak' class for bars that reach high levels
+                if (average > 200) { // Threshold for "peak" color, adjust as needed
+                    bar.classList.add('peak');
+                } else {
+                    bar.classList.remove('peak');
+                }
+            }
+        }
+
+        async function startRecording() {
+            loadingMessage.textContent = "Waiting for microphone access...";
+            loadingMessage.style.display = 'block';
+            recordingTimer.style.display = 'none';
+            recordButton.disabled = true; // Disable button while getting stream
+            audioVisualizer.style.display = 'none'; // Ensure visualizer is hidden during permission request
+            
+            try {
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                loadingMessage.style.display = 'none'; // Hide loading message
+                recordingTimer.style.display = 'block'; // Show timer
+                recordButton.disabled = false; // Re-enable once stream is ready
+                
+                // Audio Context for Visualization
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                source = audioContext.createMediaStreamSource(audioStream);
+                source.connect(analyser);
+                // analyser.connect(audioContext.destination); // Uncomment if you want to hear self-monitor
+                analyser.fftSize = 256; // Good balance for visualizer
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                
+                mediaRecorder = new MediaRecorder(audioStream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const audioURL = URL.createObjectURL(audioBlob);
+                    audioPlayback.src = audioURL;
+                    audioPlaybackContainer.style.display = 'flex'; // Show playback controls
+                    recordButton.classList.remove('recording');
+                    audioVisualizer.style.display = 'none'; // Hide visualizer after stop
+
+                    // Reset visualizer bars
+                    visualizerBars.forEach(bar => {
+                        bar.style.height = '0px';
+                        bar.classList.remove('peak');
+                    });
+
+                    // Disconnect and close audio context to free resources
+                    if (source) source.disconnect();
+                    if (analyser) analyser.disconnect();
+                    if (audioContext) audioContext.close(); // Close context after recording is finalized
+                    
+                    // Stop all tracks in the stream
+                    audioStream.getTracks().forEach(track => track.stop());
+                    loadingMessage.textContent = "Recording stopped. Play or Retake."; // Update message
+                    loadingMessage.style.display = 'block'; // Show message
+                    recordingTimer.style.display = 'none'; // Hide timer
+                };
+
+                mediaRecorder.start();
+                recordButton.classList.add('recording');
+                recordingStartTime = Date.now();
+                timerInterval = setInterval(updateTimer, 1000);
+                audioVisualizer.style.display = 'flex'; // Show visualizer
+                visualizeAudio(); // Start the visualization loop
+                loadingMessage.textContent = "Recording..."; // Update message
+            } catch (err) {
+                console.error("Error accessing microphone: ", err);
+                let errorMessage = "Could not access microphone. Please ensure you have granted microphone permissions and try refreshing the page.";
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    errorMessage = "Microphone access was denied. Please allow microphone permissions in your browser settings.";
+                } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                    errorMessage = "No microphone found on this device.";
+                } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                    errorMessage = "Microphone is already in use or could not be started.";
+                }
+                loadingMessage.textContent = errorMessage;
+                alert(errorMessage);
+                recordButton.disabled = false; // Re-enable record button if access failed
+                audioVisualizer.style.display = 'none'; // Keep visualizer hidden
+                recordingTimer.style.display = 'none'; // Keep timer hidden
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                clearInterval(timerInterval);
+                recordingTimer.textContent = '00:00';
+                recordButton.classList.remove('recording');
+            }
+        }
+
+        // Toggle recording with a single button
+        recordButton.addEventListener('click', () => {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        });
+
+        retakeButton.addEventListener('click', () => {
+            audioPlaybackContainer.style.display = 'none';
+            audioPlayback.src = ''; // Clear the audio source
+            audioBlob = null; // Clear the audio blob
+            audioChunks = []; // Clear chunks for new recording
+            loadingMessage.textContent = "Ready to record. Tap the microphone button.";
+            loadingMessage.style.display = 'block';
+            recordingTimer.style.display = 'none';
+            audioVisualizer.style.display = 'none';
+            recordButton.disabled = false; // Ensure record button is enabled
+        });
+
+        saveButton.addEventListener('click', () => {
+            if (audioBlob) {
+                const link = document.createElement('a');
+                link.download = `recording_${new Date().toISOString().replace(/[:.]/g, '-')}.webm`;
+                link.href = URL.createObjectURL(audioBlob);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        });
+
+        backBtn.addEventListener('click', () => {
+            // Stop any ongoing recording or microphone access before navigating back
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop(); 
+            }
+            if (audioStream) {
+                audioStream.getTracks().forEach(t => t.stop()); 
+            }
+            if (audioContext && audioContext.state !== 'closed') {
+                audioContext.close(); 
+            }
+            clearInterval(timerInterval);
+            window.history.back();
+        });
+
+        favoriteBtn.addEventListener('click', () => {
+            const index = favorites.indexOf(TOOL_ID);
+            if (index > -1) {
+                favorites.splice(index, 1);
+                favoriteBtn.querySelector('i').classList.replace('fas', 'far');
+            } else {
+                favorites.unshift(TOOL_ID);
+                favoriteBtn.querySelector('i').classList.replace('far', 'fas');
+            }
+            favoriteBtn.classList.toggle('active');
+            localStorage.setItem('favorites', JSON.stringify(favorites));
+        });
+
+        window.addEventListener('load', () => {
+            loadingMessage.textContent = "Ready to record. Tap the microphone button.";
+            loadingMessage.style.display = 'block';
+            recordingTimer.style.display = 'none';
+            audioVisualizer.style.display = 'none'; // Hide visualizer initially
+            recordButton.disabled = false; // Ensure record button is enabled on load
+        });
+
+        // Ensure resources are released when user leaves the page
+        window.addEventListener('beforeunload', () => {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            if (audioStream) {
+                audioStream.getTracks().forEach(t => t.stop());
+            }
+            if (audioContext && audioContext.state !== 'closed') {
+                audioContext.close();
+            }
+            clearInterval(timerInterval);
+        });
+    </script>
+</body>
+</html>
